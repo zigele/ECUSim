@@ -3,12 +3,26 @@ from typing import Any
 
 
 class DIDCoding:
-    did_len: int
-    factor: float
-    offset: float
+    def __init__(self, size: int,factor:float,offset:float):
+        self._did_len = int(size)
+        self._factor=float(factor)
+        self._offset=float(offset)
 
-    def __init__(self, size: int):
-        self.did_len = size
+    @property
+    def factor(self):
+        return self._factor
+
+    @factor.setter
+    def factor(self,value):
+        self._factor =float(value)
+
+    @property
+    def offset(self):
+        return self._offset
+
+    @offset.setter
+    def offset(self,value):
+        self._offset =float(value)
 
     def encode(self, phy_value):
         pass
@@ -17,48 +31,39 @@ class DIDCoding:
         pass
 
     def __len__(self) -> int:
-        return self.did_len
+        return self._did_len
 
 
 class AsciiCoding(DIDCoding):
-    did_len: int
-    factor: float
-    offset: float
-
     def __init__(self, string_len: int):
-        self.did_len = string_len
+        self._did_len = int(string_len)
+        self._factor=1
+        self._offset=1
 
     def encode(self, string_ascii: Any) -> bytes:  # type: ignore
         if not isinstance(string_ascii, str):
             raise ValueError("AsciiCodec requires a string for encoding")
 
-        if len(string_ascii) != self.did_len:
-            raise ValueError('String must be %d long' % self.did_len)
+        if len(string_ascii) != self._did_len:
+            raise ValueError('String must be %d long' % self._did_len)
+
         return string_ascii.encode('ascii')
 
     def decode(self, string_bin: list) -> Any:
         string_ascii = bytes(string_bin).decode('ascii')
-        if len(string_ascii) != self.did_len:
+        if len(string_ascii) != self._did_len:
             raise ValueError(
-                'Trying to decode a string of %d bytes but codec expects %d bytes' % (len(string_ascii), self.did_len))
+                'Trying to decode a string of %d bytes but codec expects %d bytes' % (len(string_ascii), self._did_len))
         return string_ascii
 
-    def __len__(self) -> int:
-        return self.did_len
-
-
 class UCharLinearCoding(DIDCoding):
-    did_len = 1
-    factor: float
-    offset: float
-
     def __init__(self, factor: float, offset: float):
-        self.factor = factor
-        self.offset = offset
+        self._factor=float(factor)
+        self._offset=float(offset)
 
     def decode(self, inr_value: list) -> float:
-        if not len(inr_value) == self.did_len:
-            raise Exception("UCharLinearCoding function inr_value not equal the setting value" + str(self.did_len))
+        if not len(inr_value) == self._did_len:
+            raise Exception("input value not equal the setting value" + str(self._did_len))
         val = list(struct.unpack(">B", bytes(inr_value)))[0]
         return val * self.factor + self.offset
 
@@ -69,17 +74,13 @@ class UCharLinearCoding(DIDCoding):
 
 
 class CharLinearCoding(DIDCoding):
-    did_len = 1
-    factor: float
-    offset: float
-
     def __init__(self, factor: float, offset: float):
-        self.factor = factor
-        self.offset = offset
+        self._factor=float(factor)
+        self._offset=float(offset)
 
     def decode(self, inr_value: list) -> float:
-        if not len(inr_value) == self.did_len:
-            raise Exception("CharLinearCoding function inr_value not equal the setting value" + str(self.did_len))
+        if not len(inr_value) == self._did_len:
+            raise Exception("CharLinearCoding function inr_value not equal the setting value" + str(self._did_len))
         val = list(struct.unpack(">b", bytes(inr_value)))
         return val * self.factor + self.offset
 
@@ -90,18 +91,14 @@ class CharLinearCoding(DIDCoding):
 
 
 class UShortLinearCoding(DIDCoding):
-    did_len = 2
-    factor: float
-    offset: float
-
     def __init__(self, factor: float, offset: float):
-        self.factor = factor
-        self.offset = offset
+        self._factor=float(factor)
+        self._offset=float(offset)
 
     def decode(self, inr_value: list) -> float:
-        if not len(inr_value) == self.did_len:
-            raise Exception("UShortLinearCoding function inr_value not equal the setting value" + str(self.did_len))
-        val = list(struct.unpack(">" + ("H" * int(self.did_len / 2)), bytes(inr_value)))[0]
+        if not len(inr_value) == self._did_len:
+            raise Exception("UShortLinearCoding function inr_value not equal the setting value" + str(self._did_len))
+        val = list(struct.unpack(">" + ("H" * int(self._did_len / 2)), bytes(inr_value)))[0]
         return val * self.factor + self.offset
 
     def encode(self, phy_value) -> list:
@@ -111,17 +108,13 @@ class UShortLinearCoding(DIDCoding):
 
 
 class ShortLinearCoding(DIDCoding):
-    did_len = 2
-    factor: float
-    offset: float
-
     def __init__(self, factor: float, offset: float):
-        self.factor = factor
-        self.offset = offset
+        self._factor=float(factor)
+        self._offset=float(offset)
 
     def decode(self, inr_value: list) -> float:
-        if not len(inr_value) == self.did_len:
-            raise Exception("UShortLinearCoding function inr_value not equal the setting value" + str(self.did_len))
+        if not len(inr_value) == self._did_len:
+            raise Exception("UShortLinearCoding function inr_value not equal the setting value" + str(self._did_len))
         val = list(struct.unpack(">h", bytes(inr_value)))[0]
         return val * self.factor + self.offset
 

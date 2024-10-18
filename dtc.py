@@ -3,20 +3,31 @@ from uds_addtion import Singleton
 
 class DTCValue:
     def __init__(self, pcode: int, ftb: int):
-        self.pcode = pcode
-        self.ftb = ftb
+        self._pcode = pcode
+        self._ftb = ftb
+
+    @property
+    def pcode(self):
+        return self._pcode
+
+    @pcode.setter
+    def pcode(self,value):
+        self._pcode =int(value)
+
+    @property
+    def ftb(self):
+        return self._ftb
+
+    @ftb.setter
+    def ftb(self, value):
+        self._ftb = int(value)
+
 
     def encode(self) -> list:
         return list(((self.pcode << 8) + self.ftb).to_bytes(3, byteorder="big", signed=False))
 
     def decode(self, dtc):
         pass
-
-    def getPcode(self):
-        return self.pcode
-
-    def getFtb(self):
-        return self.ftb
 
     @classmethod
     def getInstance(cls, data: list):
@@ -27,32 +38,65 @@ class DTCValue:
 
 
 class DTCStatus:
-    status = 0
-    testFailed = 0
-    testFailedThisOperationCycle = 0
-    pendingDTC = 0
-    confirmedDTC = 0
-    testNotCompletedSinceLastClear = 0
-    testFailedSinceLastClear = 0
-    testNotCompletedThisOperationCycle = 0
-    warningIndicatorRequested = 0
-
     def __init__(self, status):
+        self._warningIndicatorRequested = None
+        self._testNotCompletedThisOperationCycle = None
+        self._testFailedSinceLastClear = None
+        self._testNotCompletedSinceLastClear = None
+        self._confirmedDTC = None
+        self._pendingDTC = None
+        self._testFailed = None
+        self._testFailedThisOperationCycle = None
+        self._status = None
         self.parser(status)
 
     def getBit(self, val, index):
         return (val >> (index - 1)) & 0x01
 
     def parser(self, status):
-        self.status = status
-        self.testFailed = self.getBit(status, 1)
-        self.testFailedThisOperationCycle = self.getBit(status, 2)
-        self.pendingDTC = self.getBit(status, 3)
-        self.confirmedDTC = self.getBit(status, 4)
-        self.testNotCompletedSinceLastClear = self.getBit(status, 5)
-        self.testFailedSinceLastClear = self.getBit(status, 6)
-        self.testNotCompletedThisOperationCycle = self.getBit(status, 7)
-        self.warningIndicatorRequested = self.getBit(status, 8)
+        self._status = status
+        self._testFailed = self.getBit(status, 1)
+        self._testFailedThisOperationCycle = self.getBit(status, 2)
+        self._pendingDTC = self.getBit(status, 3)
+        self._confirmedDTC = self.getBit(status, 4)
+        self._testNotCompletedSinceLastClear = self.getBit(status, 5)
+        self._testFailedSinceLastClear = self.getBit(status, 6)
+        self._testNotCompletedThisOperationCycle = self.getBit(status, 7)
+        self._warningIndicatorRequested = self.getBit(status, 8)
+
+    @property
+    def status(self):
+        return self._status
+    @property
+    def testFailed(self):
+        return self._testFailed
+    @property
+    def testFailedThisOperationCycle(self):
+        return self._testFailedThisOperationCycle
+
+    @property
+    def pendingDTC(self):
+        return self._pendingDTC
+
+    @property
+    def confirmedDTC(self):
+        return self._confirmedDTC
+
+    @property
+    def testNotCompletedSinceLastClear(self):
+        return self._testNotCompletedSinceLastClear
+
+    @property
+    def testFailedSinceLastClear(self):
+        return self._testFailedSinceLastClear
+
+    @property
+    def testNotCompletedThisOperationCycle(self):
+        return self._testNotCompletedThisOperationCycle
+
+    @property
+    def warningIndicatorRequested(self):
+        return self._warningIndicatorRequested
 
     def encode(self) -> list:
         return [self.status]
@@ -61,7 +105,7 @@ class DTCStatus:
         pass
 
     def check_msk_is_match(self, msk: int):
-        return (msk & self.status) >= 1
+        return (msk & self._status) >= 1
 
     @classmethod
     def getInstance(cls, status: list):
@@ -76,7 +120,8 @@ class DTC():
 
 @Singleton
 class DTCBuffer():
-    dtc_buffer = []
+    def __init__(self):
+        self.dtc_buffer = [DTC(1, 2, 0xcd), DTC(0x235, 12, 0xfe), DTC(0xd982, 0xf, 0x2e)]
 
     def add_dtc(self, pcode, ftb, status):
         self.dtc_buffer.append(DTC(pcode, ftb, status))
