@@ -9,6 +9,14 @@ class DIDCoding:
         self._offset=float(offset)
 
     @property
+    def did_len(self):
+        return self._did_len
+
+    @did_len.setter
+    def did_len(self,value):
+        self._did_len =int(value)
+
+    @property
     def factor(self):
         return self._factor
 

@@ -101,6 +101,7 @@ class BaseService(ABC):
 class DiagnosticSessionControl(BaseService):
     _sid = 0x10
     _sub_func = True
+    supported_negative_response = [UDSResponseCode.RequestOutOfRange]
 
     class DiagnosticSessionType(Enum):
         ISOSAEReserved = 0
@@ -203,8 +204,8 @@ class SecurityAccess(BaseService):
         self._unlock_level = level
         return [self.response_id(), level, 1, 2, 3, 4]
 
-    def unlock(self) -> bool:
-        return [self.response_id(), self._unlock_level + 1]
+    def unlock(self,security_access_type) -> bool:
+        return [self.response_id(), security_access_type]
 
     def process(self, data: list):
         req_sid, security_access_type, *reserved = data
@@ -219,7 +220,7 @@ class SecurityAccess(BaseService):
             else:
                 return None
         elif security_access_type in self.KeySym._value2member_map_:
-            r = self.unlock()
+            r = self.unlock(security_access_type)
             logger.info(f'DiagnosticSessionControl make pos respnse {r}')
             if self.is_suppressPosRspMsgIndicationBit(security_access_type):
                 return r
@@ -382,6 +383,7 @@ class WriteDataByIdentifier(BaseService):
 class ClearDiagnosticInformation(BaseService):
     _sid = 0x14
     _sub_func = False
+    supported_negative_response = [UDSResponseCode.RequestOutOfRange]
 
     def make_pos_response(self, *args, **kwargs) -> List:
         return [self.response_id()]
@@ -402,6 +404,7 @@ class ReadDTCInformation(BaseService):
     _sid = 0x19
     _sub_func = True
     _DTCStatusAvailabilityMask = 0xff
+    supported_negative_response = [UDSResponseCode.RequestOutOfRange]
 
     class SubFun(Enum):
         reportNumberOfDTCByStatusMask = 1
@@ -426,8 +429,8 @@ class ReadDTCInformation(BaseService):
         reportDTCFaultDetectionCounter = 0x14
         reportDTCWithPermanentStatus = 0x15
 
-    def make_pos_response(self, *args, **kwargs) -> List:
-        return [self.response_id(), ]
+    def make_pos_response(self, el) -> List:
+        return [self.response_id()]+el
 
     def process(self, data: list):
         if len(data) < 3:
@@ -439,7 +442,10 @@ class ReadDTCInformation(BaseService):
             dtc_msk, *notused = reseved
             d = DTCBuffer()
             res = d.get_dtc_by_msk(dtc_msk)
-            print(res)
+            ll=[subfunc]
+            for ee in res:
+                ll += ee.dtc_val.encode()+ee.dtc_st.encode()
+            return self.make_pos_response(ll)
         else:
             return self.make_neg_response(UDSResponseCode.RequestOutOfRange)
 
@@ -583,8 +589,6 @@ class TransferData(BaseService):
             self.eol.rev_buffer.extend(reversed)
             self.eol.eol_rev_count = self.eol.eol_rev_count + len(reversed)
             self.eol.eol_rev_block_count += 1
-            print(self.eol.eol_rev_count)
-            print(self.eol.eol_rev_block_count)
             if self.eol.eol_rev_block_count == 0xff:
                 self.eol.eol_rev_block_count = -1  # why this value will be start with zero after catch 0xff。
             return self.make_pos_response(blockSequenceCounter)
